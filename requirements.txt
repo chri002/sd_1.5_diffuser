@@ -1,0 +1,14 @@
+accelerate
+diffusers>=0.21.0
+einops
+ftfy
+huggingface_hub
+insightface
+mediapy
+omegaconf
+onnxruntime
+peft
+scipy
+transformers>=4.33.0
+ultralytics
+xformers
