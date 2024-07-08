@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import PIL
 import random
 
+
 #download
 ## !pip install huggingface_hub
 ## !pip install ultralytics
@@ -87,6 +88,8 @@ class ADetailerDiffuser:
         args["blur_radius"] = 5
     if "cb" not in args.keys():
         args["cb"] = None
+    if "dilatation" not in args.keys():
+    	args["dilatation"] = 0
     percent = args["percent"]/1000
 
     print(percent)
@@ -94,31 +97,35 @@ class ADetailerDiffuser:
     out = self.reconize(img)
     images = self.prepareImage(img, out, args["width"], args["height"], percent)
 
-
+    dilatation = args["dilatation"]
     out_img = img.copy()
     w, h = img.size
     wo = int(w * percent)
     ho = int(h * percent)
 
-    def mask_circle_solid(pil_img, blur_radius):
+    def mask_circle_solid(pil_img, blur_radius, wo,ho, dilatation):
       background = Image.new(pil_img.mode, pil_img.size, "#000000")
 
       mask = Image.new("L", pil_img.size, 0)
       draw = ImageDraw.Draw(mask)
-      draw.ellipse([(wo,ho),(pil_img.size[0]-wo, pil_img.size[1]-ho)], fill=255)
+      draw.ellipse([(wo-dilatation,ho-dilatation),(pil_img.size[0]-wo+dilatation, pil_img.size[1]-ho+dilatation)], fill=255)
       mask = mask.filter(PIL.ImageFilter.GaussianBlur(blur_radius))
+      #display(mask)
       pil_img.putalpha(mask)
       return pil_img
 
     for im,[box,_] in zip(images,out):
+      #display(im)
+      
       if not(args["ip_adap_en"]):
         image_generate = args["pipe"].img2img(image = im, prompt = args["positive"], negative_prompt = args["negative"], num_inference_steps = args["step"], strength = args["denoise"], guidance_scale = args["cfg"], callback=args["cb"]).images[0]
       else:
         image_generate = args["pipe"].generate(image = im, prompt = args["positive"], negative_prompt = args["negative"], num_inference_steps = args["step"], num_samples=1, strength = args["denoise"], guidance_scale = args["cfg"], callback=args["cbf"], callback_steps=1, face_image=args["ip_adap_face_image"], faceid_embeds=args["ip_adap_faceid_embeds"], scale=args["ip_adap_scale"], s_scale=args["ip_adap_scale"],noise=args["ip_adap_scale"], shortcut=True )[0]
-      
+      #display(image_generate)
       image_generate = image_generate.resize((int(box[2]-box[0]+2*wo),int(box[3]-box[1]+2*ho)), Image.Resampling.LANCZOS)
-      image_generate = mask_circle_solid(image_generate, args["blur_radius"])
+      image_generate = mask_circle_solid(image_generate, args["blur_radius"], wo,ho,dilatation)
       
+      print(wo,ho)
       out_img.paste(image_generate, (int(box[0]-wo), int(box[1]-ho)), image_generate)
 
     return out_img
