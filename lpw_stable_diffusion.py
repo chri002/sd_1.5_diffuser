@@ -12,6 +12,7 @@ import math
 import safetensors
 
 from diffusers import DiffusionPipeline
+from diffusers.pipelines.pipeline_utils import StableDiffusionMixin
 from diffusers.configuration_utils import FrozenDict
 from diffusers.image_processor import VaeImageProcessor, PipelineImageInput
 from diffusers.loaders import FromSingleFileMixin, LoraLoaderMixin, TextualInversionLoaderMixin
@@ -419,7 +420,7 @@ def preprocess_mask(mask, batch_size, scale_factor=8):
 
 
 class StableDiffusionLongPromptWeightingPipeline(
-    DiffusionPipeline, TextualInversionLoaderMixin, LoraLoaderMixin, FromSingleFileMixin
+    DiffusionPipeline, StableDiffusionMixin, TextualInversionLoaderMixin, LoraLoaderMixin, FromSingleFileMixin
 ):
     r"""
     Pipeline for text-to-image generation using Stable Diffusion without tokens length limit, and support parsing
